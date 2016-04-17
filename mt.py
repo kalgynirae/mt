@@ -10,6 +10,11 @@ handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: $(message)s')
 handler.setLevel(logging.DEBUG)
 app.logger.addHandler(handler)
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    app.logger.exception()
+    return 'error', 500
+
 @app.route('/test')
 def test():
     raise RuntimeError('test')
@@ -22,23 +27,26 @@ def get():
 
 @app.route('/webhook', methods=['POST'])
 def post():
-    for sender, text in extract_text_messages(request.get_json()):
-        response = 'You said “%s”' % text
-        data = {
-            'recipient': {'id': sender},
-            'message': {'text': response},
-        }
-        params = {
-            'access_token': app.config['PAGE_ACCESS_TOKEN'],
-        }
-        r = requests.post(
-            'https://graph.facebook.com/v2.6/me/messages',
-            params=params,
-            data=data,
-        )
-        app.logger.debug('graph.facebook.com returned %s', r.status_code)
-        app.logger.debug('Response from graph.facebook.com: %r', r.text)
-    return 'ok'
+    try:
+        for sender, text in extract_text_messages(request.get_json()):
+            response = 'You said “%s”' % text
+            data = {
+                'recipient': {'id': sender},
+                'message': {'text': response},
+            }
+            params = {
+                'access_token': app.config['PAGE_ACCESS_TOKEN'],
+            }
+            r = requests.post(
+                'https://graph.facebook.com/v2.6/me/messages',
+                params=params,
+                data=data,
+            )
+            app.logger.debug('graph.facebook.com returned %s', r.status_code)
+            app.logger.debug('Response from graph.facebook.com: %r', r.text)
+        return 'ok'
+    except Exception as e:
+        raise RuntimeError(e)
 
 def extract_text_messages(data):
     for entry in data['entry']:
