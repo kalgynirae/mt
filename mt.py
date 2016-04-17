@@ -27,26 +27,25 @@ def get():
 
 @app.route('/webhook', methods=['POST'])
 def post():
-    try:
-        for sender, text in extract_text_messages(request.get_json()):
-            response = 'You said “%s”' % text
-            data = {
-                'recipient': {'id': sender},
-                'message': {'text': response},
-            }
-            params = {
-                'access_token': app.config['PAGE_ACCESS_TOKEN'],
-            }
-            r = requests.post(
-                'https://graph.facebook.com/v2.6/me/messages',
-                params=params,
-                data=data,
-            )
-            app.logger.debug('graph.facebook.com returned %s', r.status_code)
-            app.logger.debug('Response from graph.facebook.com: %r', r.text)
-        return 'ok'
-    except Exception as e:
-        raise RuntimeError(e)
+    app.logger.info('Got post')
+    app.logger.debug('this is a debug')
+    for sender, text in extract_text_messages(request.get_json()):
+        response = 'You said “%s”' % text
+        data = {
+            'recipient': {'id': sender},
+            'message': {'text': response},
+        }
+        params = {
+            'access_token': app.config['PAGE_ACCESS_TOKEN'],
+        }
+        r = requests.post(
+            'https://graph.facebook.com/v2.6/me/messages',
+            params=params,
+            data=data,
+        )
+        app.logger.debug('graph.facebook.com returned %s', r.status_code)
+        app.logger.debug('Response from graph.facebook.com: %r', r.text)
+    return 'ok'
 
 def extract_text_messages(data):
     for entry in data['entry']:
